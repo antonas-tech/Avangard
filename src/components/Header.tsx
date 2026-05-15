@@ -1,99 +1,169 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { DayNightToggle } from "./DayNightToggle";
 
 const NAV = [
-  { label: "Коллекции", href: "#collections" },
-  { label: "Философия", href: "#philosophy" },
-  { label: "Материалы", href: "#materials" },
-  { label: "Контакты", href: "#footer" },
+  { href: "#spaces", label: "Пространство" },
+  { href: "#menu", label: "Меню" },
+  { href: "#night", label: "Ночной вайб" },
+  { href: "#booking", label: "Бронь" },
+  { href: "#contact", label: "Контакты" },
 ];
 
 export function Header() {
-  const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
-
-  // Background opacity grows as you scroll.
-  const bgAlpha = useTransform(scrollY, [0, 120], [0, 0.72]);
-  const borderAlpha = useTransform(scrollY, [0, 120], [0, 0.08]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const unsub = scrollY.on("change", (v) => setScrolled(v > 24));
-    return () => unsub();
-  }, [scrollY]);
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.documentElement.style.overflow = "";
+    };
+  }, [open]);
 
   return (
-    <motion.header
-      className="fixed inset-x-0 top-0 z-50"
-      initial={{ y: -24, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]
+        ${scrolled ? "py-2" : "py-4"}`}
     >
-      <motion.div
-        className="absolute inset-0 backdrop-blur-xl"
-        style={{
-          backgroundColor: useTransform(
-            bgAlpha,
-            (a) => `rgba(249, 248, 246, ${a})`
-          ),
-          borderBottom: "1px solid",
-          borderColor: useTransform(
-            borderAlpha,
-            (a) => `rgba(44, 61, 48, ${a})`
-          ),
-        }}
-        aria-hidden
-      />
-      <div className="container-editorial relative flex h-16 items-center justify-between md:h-20">
-        <a href="#top" className="flex items-center gap-2 group">
-          <Logo
-            className={`h-7 w-7 transition-colors duration-700 ease-apple ${
-              scrolled ? "text-forest-300" : "text-forest-300"
-            }`}
-          />
-          <span className="font-serif text-[22px] tracking-editorial text-forest-300">
-            avangard
-          </span>
-        </a>
+      <div className="container-page">
+        <div
+          className={`flex items-center justify-between gap-4 rounded-full border px-3 py-2 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]
+            ${scrolled ? "glass-strong shadow-glass" : "glass"}
+          `}
+          style={{ borderColor: "var(--border)" }}
+        >
+          <a href="#top" className="pl-2 pr-1 py-1 rounded-full">
+            <Logo />
+          </a>
 
-        <nav className="hidden items-center gap-10 md:flex">
-          {NAV.map((item) => (
+          <nav className="hidden lg:flex items-center gap-1 text-[12px]">
+            {NAV.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="relative group rounded-full px-3.5 py-2 font-mono uppercase tracking-[0.22em] text-white/70 hover:text-white transition-colors"
+              >
+                <span className="relative z-10">{item.label}</span>
+                <span
+                  className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(255,0,127,0.18), rgba(138,43,226,0.18))",
+                  }}
+                />
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2">
             <a
-              key={item.href}
-              href={item.href}
-              className="group relative text-[13px] font-medium tracking-wide text-graphite-soft"
+              href="tel:+79180010306"
+              className="hidden md:inline-flex font-mono text-[11px] tracking-[0.22em] uppercase text-white/80 hover:text-white px-3"
             >
-              <span className="transition-colors duration-500 ease-apple group-hover:text-forest-300">
-                {item.label}
-              </span>
-              <span className="absolute -bottom-1 left-0 h-px w-full origin-left scale-x-0 bg-forest-300 transition-transform duration-700 ease-apple group-hover:scale-x-100" />
+              +7 918 001-03-06
             </a>
-          ))}
-        </nav>
-
-        <a
-          href="#footer"
-          className="group hidden items-center gap-2 text-[13px] font-medium tracking-wide text-forest-300 md:inline-flex"
-        >
-          <span className="relative">
-            <span className="transition-opacity duration-500 ease-apple group-hover:opacity-70">
-              Связаться
-            </span>
-          </span>
-          <span
-            aria-hidden
-            className="inline-block h-px w-6 bg-forest-300 transition-all duration-700 ease-apple group-hover:w-9"
-          />
-        </a>
-
-        {/* Mobile lite-CTA */}
-        <a
-          href="#footer"
-          className="text-[13px] font-medium text-forest-300 md:hidden"
-        >
-          Связаться
-        </a>
+            <DayNightToggle />
+            <button
+              type="button"
+              aria-label="Открыть меню"
+              onClick={() => setOpen(true)}
+              className="lg:hidden ml-1 h-10 w-10 grid place-items-center rounded-full glass"
+              style={{ borderColor: "var(--border-strong)" }}
+            >
+              <BurgerIcon />
+            </button>
+          </div>
+        </div>
       </div>
-    </motion.header>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="fixed inset-0 z-40 lg:hidden"
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(80% 60% at 50% 0%, rgba(255,0,127,0.18), transparent 70%), rgba(7,8,11,0.85)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+              }}
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ y: -24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -24, opacity: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-x-4 top-24 rounded-3xl p-6 glass-strong"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <Logo />
+                <button
+                  aria-label="Закрыть"
+                  onClick={() => setOpen(false)}
+                  className="h-10 w-10 grid place-items-center rounded-full glass"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+              <ul className="flex flex-col gap-1">
+                {NAV.map((item, i) => (
+                  <motion.li
+                    key={item.href}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.06 * i + 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <a
+                      href={item.href}
+                      onClick={() => setOpen(false)}
+                      className="block py-3 font-display text-3xl tracking-tight text-white"
+                    >
+                      {item.label}
+                    </a>
+                  </motion.li>
+                ))}
+              </ul>
+              <div className="mt-8 flex flex-col gap-3">
+                <a href="tel:+79180010306" className="neon-btn">
+                  Позвонить · +7 918 001-03-06
+                </a>
+                <DayNightToggle />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
+  );
+}
+
+function BurgerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+    </svg>
   );
 }
