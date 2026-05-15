@@ -1,23 +1,28 @@
 import { Header } from "./components/Header";
 import { Hero } from "./components/Hero";
-import { Philosophy } from "./components/Philosophy";
-import { Collections } from "./components/Collections";
-import { Materials } from "./components/Materials";
+import { Spaces } from "./components/Spaces";
+import { Menu } from "./components/Menu";
+import { NightVibe } from "./components/NightVibe";
+import { Booking } from "./components/Booking";
 import { Footer } from "./components/Footer";
 import { SmoothScroll } from "./lib/SmoothScroll";
+import { ThemeProvider } from "./lib/ThemeProvider";
 
 export default function App() {
   return (
-    <div className="grain relative min-h-screen bg-sand-100 font-sans text-graphite">
-      <SmoothScroll />
-      <Header />
-      <main>
-        <Hero />
-        <Philosophy />
-        <Collections />
-        <Materials />
-      </main>
-      <Footer />
-    </div>
+    <ThemeProvider>
+      <div className="grain relative min-h-screen font-sans">
+        <SmoothScroll />
+        <Header />
+        <main>
+          <Hero />
+          <Spaces />
+          <Menu />
+          <NightVibe />
+          <Booking />
+        </main>
+        <Footer />
+      </div>
+    </ThemeProvider>
   );
 }

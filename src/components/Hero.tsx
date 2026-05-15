@@ -1,269 +1,242 @@
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { MagneticButton } from "../lib/MagneticButton";
+import { SplitText } from "../lib/Reveal";
+import { useTheme } from "../lib/ThemeProvider";
 
-const APPLE = [0.16, 1, 0.3, 1] as const;
+const NIGHT_VIDEO =
+  "https://cdn.coverr.co/videos/coverr-cocktail-bar-at-night-7068/1080p.mp4";
+const DAY_VIDEO =
+  "https://cdn.coverr.co/videos/coverr-grilling-meat-on-the-bbq-1572/1080p.mp4";
+
+const NIGHT_POSTER =
+  "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=2400&q=70";
+const DAY_POSTER =
+  "https://images.unsplash.com/photo-1551782450-a2132b4ba21d?auto=format&fit=crop&w=2400&q=70";
 
 export function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
+  const { mode } = useTheme();
+  const isNight = mode === "night";
 
-  // Subtle parallax on the visual block.
-  const imgY = useTransform(scrollYProgress, [0, 1], ["0%", "18%"]);
-  const imgScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
-  const titleY = useTransform(scrollYProgress, [0, 1], ["0%", "-8%"]);
-  const titleOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  // Parallax tilt for hero content
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rx = useSpring(useTransform(my, [-0.5, 0.5], [4, -4]), { stiffness: 120, damping: 18 });
+  const ry = useSpring(useTransform(mx, [-0.5, 0.5], [-4, 4]), { stiffness: 120, damping: 18 });
+
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onMove = (e: PointerEvent) => {
+      const r = el.getBoundingClientRect();
+      mx.set((e.clientX - r.left) / r.width - 0.5);
+      my.set((e.clientY - r.top) / r.height - 0.5);
+    };
+    el.addEventListener("pointermove", onMove);
+    return () => el.removeEventListener("pointermove", onMove);
+  }, [mx, my]);
 
   return (
     <section
-      ref={ref}
       id="top"
-      className="relative isolate min-h-[100svh] overflow-hidden bg-sand-100"
+      ref={ref}
+      className="relative isolate min-h-[100svh] w-full overflow-hidden"
+      style={{ background: "var(--bg-0)" }}
     >
-      {/* Ambient gradient wash — extremely subtle */}
+      {/* Layer 1: Background video */}
+      <div className="absolute inset-0 -z-10">
+        <video
+          key={isNight ? "night" : "day"}
+          className="h-full w-full object-cover scale-[1.04]"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster={isNight ? NIGHT_POSTER : DAY_POSTER}
+        >
+          <source src={isNight ? NIGHT_VIDEO : DAY_VIDEO} type="video/mp4" />
+        </video>
+
+        {/* Masking gradients */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: isNight
+              ? "linear-gradient(180deg, rgba(7,8,11,0.55) 0%, rgba(7,8,11,0.55) 40%, rgba(7,8,11,0.92) 100%)"
+              : "linear-gradient(180deg, rgba(255,232,200,0.30) 0%, rgba(255,232,200,0.25) 40%, rgba(245,235,220,0.92) 100%)",
+          }}
+        />
+        <div className="ambient" />
+      </div>
+
+      {/* Neon vignette frame */}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(60% 60% at 80% 10%, rgba(67,82,70,0.07), transparent 60%), radial-gradient(50% 50% at 10% 90%, rgba(214,207,191,0.45), transparent 70%)",
+            "radial-gradient(120% 80% at 50% 110%, rgba(255,0,127,0.18), transparent 60%), radial-gradient(80% 60% at 0% 0%, rgba(138,43,226,0.15), transparent 60%)",
         }}
       />
 
-      <div className="container-editorial relative flex min-h-[100svh] flex-col justify-end pb-16 pt-32 md:pb-24 md:pt-36">
-        {/* Eyebrow row */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: APPLE as unknown as number[], delay: 0.5 }}
-          className="mb-10 flex items-center justify-between md:mb-14"
-        >
-          <div className="flex items-center gap-3">
-            <span className="inline-block h-1 w-1 rounded-full bg-forest-300" />
-            <span className="eyebrow">Мебельная мануфактура — с 2008</span>
-          </div>
-          <span className="hidden text-[11px] uppercase tracking-[0.32em] text-graphite-mute md:inline">
-            Коллекция · MMXXVI
-          </span>
-        </motion.div>
+      {/* Vertical side markers */}
+      <div className="hidden lg:block absolute left-6 top-1/2 -translate-y-1/2 z-10">
+        <div className="rotate-180 [writing-mode:vertical-rl] font-mono text-[10px] uppercase tracking-[0.32em] text-white/55">
+          Адлер · Сириус · Старошкольная 27
+        </div>
+      </div>
+      <div className="hidden lg:block absolute right-6 top-1/2 -translate-y-1/2 z-10">
+        <div className="[writing-mode:vertical-rl] font-mono text-[10px] uppercase tracking-[0.32em] text-white/55">
+          {isNight ? "В эфире · 14:00 — 03:00" : "Открыто · 14:00 — 03:00"}
+        </div>
+      </div>
 
-        <div className="grid grid-cols-12 gap-y-10 md:gap-x-10">
-          {/* Headline */}
-          <motion.div
-            style={{ y: titleY, opacity: titleOpacity }}
-            className="col-span-12 lg:col-span-8"
-          >
-            <h1 className="heading-display text-[44px] sm:text-[64px] md:text-[96px] lg:text-[120px]">
-              <RevealLine delay={0.15}>Искусство</RevealLine>
-              <RevealLine delay={0.3} className="block italic font-light text-forest-100">
-                в&nbsp;каждой
-              </RevealLine>
-              <RevealLine delay={0.45}>детали.</RevealLine>
-            </h1>
-          </motion.div>
-
-          {/* Right column — meta + paragraph */}
-          <motion.div
-            initial={{ opacity: 0, y: 28 }}
+      {/* Content */}
+      <motion.div
+        style={{ rotateX: rx, rotateY: ry, transformPerspective: 1200 }}
+        className="container-page relative z-10 flex min-h-[100svh] flex-col justify-end pb-16 pt-40 lg:pb-24"
+      >
+        <div className="max-w-[1100px]">
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 1.1,
-              ease: APPLE as unknown as number[],
-              delay: 0.85,
-            }}
-            className="col-span-12 flex flex-col justify-end lg:col-span-4"
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="eyebrow text-white/70"
           >
-            <p className="max-w-md text-pretty text-[15px] leading-[1.7] text-graphite-soft md:text-[16px]">
-              Кухонные и корпусные модули, в&nbsp;которых геометрия,
-              благородные материалы и&nbsp;инженерная точность складываются
-              в&nbsp;тихую, уверенную форму.
-            </p>
+            01 · {isNight ? "Гастробар & Караоке" : "Дневной гастробар"} · с 2021
+          </motion.p>
 
-            <div className="mt-10 flex items-center gap-6">
-              <MagneticButton
-                onClick={() => {
-                  document
-                    .getElementById("collections")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="group inline-flex items-center gap-3 rounded-full bg-forest-300 px-7 py-3.5 text-[13px] font-medium tracking-wide text-sand-100 transition-all duration-700 ease-apple hover:bg-forest-200"
-              >
-                <span>Смотреть коллекцию</span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  className="transition-transform duration-700 ease-apple group-hover:translate-x-1"
-                  aria-hidden
-                >
-                  <path
-                    d="M1 7H13M13 7L7 1M13 7L7 13"
-                    stroke="currentColor"
-                    strokeWidth="1.2"
-                  />
-                </svg>
-              </MagneticButton>
+          <h1 className="heading-display mt-6 text-[clamp(2.6rem,8.4vw,7.6rem)] text-white">
+            <span className="block">
+              <SplitText text={isNight ? "Днём — сочный" : "Сочный"} delay={0.25} />
+            </span>
+            <span className="block">
+              <SplitText
+                text={isNight ? "гастробар." : "гастробар"}
+                delay={0.4}
+                className="text-white"
+              />
+            </span>
+            <span className="block">
+              <SplitText
+                text={isNight ? "Ночью — громкое" : "с видом на горы"}
+                delay={0.55}
+              />
+            </span>
+            <span className="block neon-text">
+              <SplitText
+                text={isNight ? "караоке." : "и авторский мангал."}
+                delay={0.7}
+              />
+            </span>
+          </h1>
 
-              <a
-                href="#philosophy"
-                className="group text-[13px] font-medium tracking-wide text-forest-300"
-              >
-                <span className="border-b border-forest-300/40 pb-1 transition-colors duration-700 ease-apple group-hover:border-forest-300">
-                  Философия бренда
-                </span>
-              </a>
+          <motion.p
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.0, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-8 max-w-[640px] text-balance text-base sm:text-lg leading-[1.6] text-white/75"
+          >
+            Двухуровневое пространство отдыха в самом сердце Сириуса. Терраса с
+            видом на Кавказские горы, авторский мангал на углях и профессиональный
+            караоке-звук до самого утра.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="mt-10 flex flex-wrap items-center gap-4"
+          >
+            <MagneticButton className="neon-btn animate-pulseGlow" onClick={() => scrollTo("#booking")}>
+              Забронировать стол
+              <ArrowIcon />
+            </MagneticButton>
+
+            <MagneticButton className="ghost-btn" onClick={() => scrollTo("#menu")}>
+              Открыть меню
+            </MagneticButton>
+
+            <div className="ml-2 hidden md:flex items-center gap-3 text-white/60">
+              <Pulse />
+              <span className="font-mono text-[11px] uppercase tracking-[0.24em]">
+                Сейчас открыто
+              </span>
             </div>
           </motion.div>
         </div>
 
-        {/* Visual block — large editorial image with parallax */}
-        <motion.figure
-          initial={{ opacity: 0, clipPath: "inset(8% 8% 8% 8% round 24px)" }}
-          animate={{
-            opacity: 1,
-            clipPath: "inset(0% 0% 0% 0% round 24px)",
-          }}
-          transition={{
-            duration: 1.6,
-            ease: APPLE as unknown as number[],
-            delay: 1.0,
-          }}
-          className="relative mt-16 aspect-[16/9] w-full overflow-hidden rounded-3xl bg-sand-200 md:mt-20"
+        {/* Footer ticker */}
+        <div
+          className="mt-16 lg:mt-24 -mx-5 sm:-mx-8 lg:-mx-12 border-y py-3 overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
         >
-          <motion.div
-            style={{ y: imgY, scale: imgScale }}
-            className="absolute inset-0 will-change-transform"
-          >
-            <HeroVisual />
-          </motion.div>
+          <div className="flex animate-marquee gap-12 whitespace-nowrap font-display text-2xl sm:text-3xl tracking-[0.04em] text-white/80 will-change-transform">
+            {Array.from({ length: 2 }).map((_, k) => (
+              <div key={k} className="flex items-center gap-12">
+                <Marquee />
+              </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
 
-          {/* Caption */}
-          <figcaption className="absolute bottom-5 left-6 right-6 flex items-end justify-between text-[11px] uppercase tracking-[0.3em] text-sand-100/85 md:bottom-7 md:left-8 md:right-8">
-            <span>Кухня "Sereno" · Дуб дымчатый, латунь, камень</span>
-            <span className="hidden md:inline">01 / 12</span>
-          </figcaption>
-        </motion.figure>
-
-        {/* Scroll cue */}
+      {/* Scroll indicator */}
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 text-white/60">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 2, duration: 1 }}
-          className="mt-12 flex items-center gap-3 text-[11px] uppercase tracking-[0.32em] text-graphite-mute"
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          className="font-mono text-[10px] uppercase tracking-[0.32em]"
         >
-          <span className="relative inline-block h-7 w-px overflow-hidden">
-            <motion.span
-              animate={{ y: ["-100%", "100%"] }}
-              transition={{
-                duration: 2.4,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute left-0 top-0 block h-full w-px bg-forest-300"
-            />
-          </span>
-          <span>Прокрутка</span>
+          ↓ Прокрутка
         </motion.div>
       </div>
     </section>
   );
 }
 
-function RevealLine({
-  children,
-  delay = 0,
-  className,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+function Marquee() {
+  const items = [
+    "Авторский мангал",
+    "Кавказская кухня",
+    "Караоке · 03:00",
+    "Панорамная терраса",
+    "Кальянная карта",
+    "Live · DJ-сеты",
+    "Старошкольная, 27",
+  ];
   return (
-    <span className={`block overflow-hidden ${className ?? ""}`}>
-      <motion.span
-        className="block"
-        initial={{ y: "110%", opacity: 0 }}
-        animate={{ y: "0%", opacity: 1 }}
-        transition={{
-          duration: 1.2,
-          ease: APPLE as unknown as number[],
-          delay,
-        }}
-      >
-        {children}
-      </motion.span>
+    <>
+      {items.map((t, i) => (
+        <span key={i} className="flex items-center gap-12">
+          <span>{t}</span>
+          <span className="text-malina-500">✦</span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden>
+      <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function Pulse() {
+  return (
+    <span className="relative inline-flex h-2.5 w-2.5">
+      <span className="absolute inset-0 rounded-full bg-malina-500 opacity-80 animate-ping" />
+      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-malina-500" />
     </span>
   );
 }
 
-/**
- * Editorial hero illustration — pure SVG/CSS art direction.
- * Suggests a green cabinet wall against a beige room.
- * Uses no external imagery so the bundle stays self-contained.
- */
-function HeroVisual() {
-  return (
-    <div className="relative h-full w-full">
-      {/* Floor + wall planes */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, #EFEAE0 0%, #EFEAE0 62%, #DCD4C2 62%, #D2C9B5 100%)",
-        }}
-      />
-      {/* Wall warm wash */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(80% 60% at 50% 30%, rgba(255,247,232,0.5), transparent 60%)",
-        }}
-      />
-
-      {/* Cabinet wall — green */}
-      <div className="absolute bottom-[24%] left-[10%] right-[10%] top-[18%] grid grid-cols-6 gap-[2px] overflow-hidden rounded-[6px] bg-forest-300 shadow-soft">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div
-            key={i}
-            className="relative bg-forest-200"
-            style={{
-              boxShadow:
-                "inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 -40px 60px rgba(0,0,0,0.15)",
-            }}
-          >
-            <span className="absolute left-1/2 top-1/2 block h-[3px] w-7 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(232,219,184,0.85)]" />
-          </div>
-        ))}
-      </div>
-
-      {/* Countertop + island */}
-      <div className="absolute bottom-[18%] left-[16%] right-[16%] h-[5%] rounded-[3px] bg-[#E4DBC7] shadow-[0_8px_24px_rgba(0,0,0,0.08)]" />
-      <div
-        className="absolute bottom-[6%] left-[28%] right-[28%] h-[14%] rounded-[6px] bg-forest-200 shadow-soft"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, rgba(255,255,255,0.05), transparent 30%)",
-        }}
-      />
-      <div className="absolute bottom-[19.4%] left-[28%] right-[28%] h-[1.6%] rounded-sm bg-[#EAE0CB]" />
-
-      {/* Pendant lamp */}
-      <div className="absolute left-1/2 top-[10%] h-[8%] w-[1px] -translate-x-1/2 bg-graphite-mute/60" />
-      <div className="absolute left-1/2 top-[18%] h-3 w-12 -translate-x-1/2 rounded-full bg-[#C9A270] shadow-md" />
-
-      {/* Subtle vignette */}
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 80% at 50% 90%, transparent 60%, rgba(28,28,28,0.18) 100%)",
-        }}
-      />
-    </div>
-  );
+function scrollTo(hash: string) {
+  const el = document.querySelector(hash);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
 }

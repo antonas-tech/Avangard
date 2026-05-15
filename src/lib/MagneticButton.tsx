@@ -12,15 +12,11 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "ref"> & {
 };
 
 /**
- * Subtle magnetic hover — the button drifts a few pixels toward the cursor.
- * Spring physics keep the motion physically convincing.
- *
- * The animated wrapper is a `motion.span` so the underlying <button>
- * keeps clean native semantics and event types.
+ * Magnetic CTA: the button drifts a few pixels toward the cursor, spring-physics.
  */
 export function MagneticButton({
   children,
-  strength = 0.3,
+  strength = 0.35,
   className,
   ...rest
 }: Props) {
@@ -28,8 +24,8 @@ export function MagneticButton({
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const springX = useSpring(x, { stiffness: 200, damping: 20, mass: 0.5 });
-  const springY = useSpring(y, { stiffness: 200, damping: 20, mass: 0.5 });
+  const springX = useSpring(x, { stiffness: 220, damping: 18, mass: 0.5 });
+  const springY = useSpring(y, { stiffness: 220, damping: 18, mass: 0.5 });
 
   const handleMove = (e: React.MouseEvent<HTMLSpanElement>) => {
     const el = wrapRef.current;
